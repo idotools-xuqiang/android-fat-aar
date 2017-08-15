@@ -30,7 +30,13 @@ or apply directly from the url
 
 `apply from: 'https://raw.githubusercontent.com/adwiv/android-fat-aar/master/fat-aar.gradle'`
 
-**Step 2: Define the embedded dependencies** 
+**Step 2: Enable build cache** 
+
+The explored aar cache directory is disabled after gradle plugin version 1.2, you need to enable it in gradle.properties
+
+`android.enableBuildCache=false`
+
+**Step 3: Define the embedded dependencies** 
 
 Then you can modify the dependencies section and change the word `compile` to `embedded` 
 for the dependencies you want merged within the aar file. The resulting section may look like this:
@@ -50,7 +56,7 @@ for the dependencies you want merged within the aar file. The resulting section 
     
 The dependencies with keyword `embedded` will be merged while the others will remain referenced as before.
 
-**Step 3: Remove embedded dependencies from exported dependency list**
+**Step 4: Remove embedded dependencies from exported dependency list**
 
 Now that you have embedded your sub projects into the main library, you need to ensure that anyone using 
 your library does not resolve the embedded projects as transitive dependencies. Otherwise he will get 

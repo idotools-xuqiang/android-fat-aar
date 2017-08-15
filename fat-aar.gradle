@@ -78,11 +78,21 @@ ext.build_dir = buildDir.path.replace(File.separator, '/');
 
 ext.exploded_aar_dir = "$build_dir/intermediates/exploded-aar";
 ext.classs_release_dir = "$build_dir/intermediates/classes/release";
-ext.bundle_release_dir = "$build_dir/intermediates/bundles/release";
+ext.bundle_release_dir = "$build_dir/intermediates/bundles/default";
 ext.manifest_aaapt_dir = "$build_dir/intermediates/manifests/aapt/release";
 ext.generated_rsrc_dir = "$build_dir/generated/source/r/release";
 
 ext.base_r2x_dir = "$build_dir/fat-aar/release/";
+
+//skip Test tasks
+gradle.taskGraph.whenReady {
+    tasks.each { task ->
+        if (task.name.contains("Test"))
+        {
+            task.enabled = false
+        }
+    }
+}
 
 afterEvaluate {
     // the list of dependency must be reversed to use the right overlay order.
@@ -116,7 +126,7 @@ afterEvaluate {
 
         // Embed JNI Libraries
         bundleRelease.dependsOn embedJniLibs
-        embedJniLibs.dependsOn transformNative_libsWithSyncJniLibsForRelease
+        embedJniLibs.dependsOn transformNativeLibsWithSyncJniLibsForRelease
 
         // Merge Embedded Manifests
         bundleRelease.dependsOn embedManifests
@@ -335,22 +345,22 @@ task embedManifests << {
     File reportFile = file("${build_dir}/embedManifestReport.txt")
 
     File origManifest = file("$bundle_release_dir/AndroidManifest.xml")
-    File copyManifest = file("$bundle_release_dir/AndroidManifest.orig.xml")
+//    File copyManifest = file("$bundle_release_dir/AndroidManifest.orig.xml")
     File aaptManifest = file("$manifest_aaapt_dir/AndroidManifest.xml")
 
-    copy {
-        from origManifest.parentFile
-        into copyManifest.parentFile
-        include origManifest.name
-        rename(origManifest.name, copyManifest.name)
-    }
+//    copy {
+//        from origManifest.parentFile
+//        into copyManifest.parentFile
+//        include origManifest.name
+//        rename(origManifest.name, copyManifest.name)
+//    }
 
     try {
-        Invoker manifestMergerInvoker = ManifestMerger2.newMerger(copyManifest, mLogger, MergeType.APPLICATION)
+        Invoker manifestMergerInvoker = ManifestMerger2.newMerger(origManifest, mLogger, MergeType.APPLICATION)
 
         manifestMergerInvoker.addLibraryManifests(libraryManifests.toArray(new File[libraryManifests.size()]))
 
-        // manifestMergerInvoker.setPlaceHolderValues(placeHolders)
+        manifestMergerInvoker.setPlaceHolderValues(android.defaultConfig.manifestPlaceholders)
         manifestMergerInvoker.setMergeReportFile(reportFile);
 
         MergingReport mergingReport = manifestMergerInvoker.merge();
@@ -360,7 +370,7 @@ task embedManifests << {
         switch (result) {
             case MergingReport.Result.WARNING:
                 mergingReport.log(mLogger);
-        // fall through since these are just warnings.
+                // fall through since these are just warnings.
             case MergingReport.Result.SUCCESS:
                 XmlDocument xmlDocument = mergingReport.getMergedXmlDocument(MergingReport.MergedManifestKind.MERGED);
                 try {
